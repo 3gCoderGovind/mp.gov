@@ -1,0 +1,133 @@
+//external sorting
+#include<stdio.h>
+#include<stdlib.h>
+int numberCalculator(int sizeInMb)
+ { int i;
+    i=(sizeInMb*1024*1024)/(sizeof(int));
+    return i;
+ }
+void mergePortion(int *x,int lb1,int ub1,int lb2,int ub2,int stackSize)
+ {  int i,j,temp[stackSize],e,f;
+    for(e=lb1,f=lb2,i=0;e<=ub1&&f<=ub2;i++)
+      { if(x[e]<x[f])
+          { temp[i]=x[e]; 
+            e++;
+          }  
+        else
+          { temp[i]=x[f];
+             f++;
+          }
+      }
+    for(;e<=ub1;i++,e++)
+      { temp[i]=x[e];
+      }
+    for(;f<=ub2;i++,f++)
+      { temp[i]=x[f]; 
+      }
+    for(j=0;j<i-1;)
+      { for(e=lb1;e<=ub2;e++,j++)
+           { x[e]=temp[j]; 
+           }
+      }
+ }
+
+void mergeSort(int *x,int lb,int ub,int stackSize)
+ {  int i,j,a,b,mid,stack1[2][stackSize],stack2[2][stackSize],top1,top2;
+      // series generate
+        top1=stackSize;
+        top2=stackSize;
+       top1--;
+      stack1[0][top1]=lb;
+      stack1[1][top1]=ub; 
+     while(top1!=stackSize)
+        {  a=stack1[0][top1];
+           b=stack1[1][top1];
+            top1++;top2--;
+           stack2[0][top2]=a;
+           stack2[1][top2]=b;
+           mid=(a+b)/2;
+           if(a<mid)
+             {   top1--;
+               stack1[0][top1]=a;
+               stack1[1][top1]=mid;
+             }
+           if(mid+1<b)
+             {  top1--;
+               stack1[0][top1]=mid+1;
+               stack1[1][top1]=b;
+             }
+        }    
+     while(top2!=stackSize)
+        {  a=stack2[0][top2];
+           b=stack2[1][top2];
+            top2++;
+           mid=(a+b)/2;
+         mergePortion(x,a,mid,mid+1,b,stackSize);          
+        } 
+ }
+int main()
+ {  int i,j,num,totalNum,*temp,cont[2][10],k,small,m,size;
+    char fileName[3],e;
+    srand(1);
+    int rand();
+    FILE *f,*f1,*g[10];
+    printf("Enter size of file:");
+     scanf("%d",&size);
+    totalNum=numberCalculator(size);
+    f=fopen("data.d","ab");
+    for(i=1;i<=totalNum;i++) 
+      { num=rand();
+        fwrite(&num,sizeof(int),1,f); 
+      }
+    fclose(f);
+   // division of data in multiple files
+     num=totalNum/10;
+     e='a';
+     temp=(int*)malloc(sizeof(int)*num);     
+     f=fopen("data.d","rb");
+      for(i=0;i<10;i++,e++)
+        {  fread(temp,sizeof(int),num,f);
+           mergeSort(temp,0,num-1,totalNum/10);
+         // dynamic file name
+           fileName[0]=e;
+           fileName[1]='.';
+           fileName[2]=e;
+           fileName[3]='\0';
+         // create files and copy of data
+           f1=fopen(fileName,"ab");
+           fwrite(temp,sizeof(int),num,f1);     
+           fclose(f1);
+        }
+     fclose(f);
+    // merge of 10 file into a single file
+    // file pointers in g array pointer;
+      for(i=0,e='a';i<10;i++,e++)                 
+         {  fileName[0]=e;fileName[1]='.';fileName[2]=e;fileName[3]='\0';
+            g[i]=fopen(fileName,"rb");
+         }
+      for(i=0;i<10;i++)
+       cont[0][i]=0;
+      f=fopen("data.d","wb");
+      
+      for(i=0;i<10;i++)
+        { fread(&cont[1][i],sizeof(int),1,g[i]);
+        }                                        
+      for(m=0;m<totalNum;m++)
+         {   for(j=0,small=cont[1][j];j<10;j++)
+                { if(cont[0][j]>=num) continue; 
+                  if(cont[1][j]>small)
+                    {  k=j;
+                      small=cont[1][j]; 
+                    }
+                }
+             fread(&cont[1][k],sizeof(int),1,g[k]);
+               cont[0][k]++;
+              fwrite(&small,sizeof(int),1,f);                   
+         }                                          
+       for(i=0;i<10;i++)                 
+       fclose(g[i]);
+       fclose(f);
+    free(temp);
+    printf("Data sorted in 'data.d' file\n");
+    return 0;
+ }
